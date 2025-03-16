@@ -1,7 +1,13 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
+import { AuthContext } from './Provider/AuthProvider';
+import { updateProfile } from 'firebase/auth';
+import { FcGoogle } from "react-icons/fc";
+
+
 
 const LoginModal = ({ isOpen, onClose }) => {
+  const {createUserEmailPass,signInUserEmailPass,authenticateWithGoogle} = useContext(AuthContext);
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     email: '',
@@ -53,11 +59,36 @@ const LoginModal = ({ isOpen, onClose }) => {
     e.preventDefault();
     
     if (validate()) {
-      console.log('Form submitted:', formData);
+      console.log('Form submitted: ---', formData);
+      if(!isLogin){
+        createUserEmailPass(formData.name , formData.email , formData.password)
+        .then(res=>{
+          updateProfile(res.user, {
+            displayName: formData.name
+          }).then(() => {
+            console.log("profile Update!");
+          }).catch((error) => {
+            console.log("Some issu occured..!!");
+          });
+
+        })
+        .then(err=>console.log(err))
+ 
+      }else{
+        signInUserEmailPass(formData.email,formData.password)
+        .then(res=>console.log(res.user))
+        .then(err=>console.log(err))
+      }
+      
       handleClose();
     }
   };
-  
+  const handelGoogleLogin=()=>{
+    authenticateWithGoogle()
+    .then(res=>console.log(res.user))
+    .catch(err=>console.log(err));
+    handleClose();
+  }
   const handleClose = () => {
     setAnimateOut(true);
     setTimeout(() => {
@@ -165,6 +196,23 @@ const LoginModal = ({ isOpen, onClose }) => {
             {isLogin ? 'Login' : 'Sign Up'}
           </button>
         </form>
+
+        <div className='flex justify-center gap-3 text-black w-[40%] m-auto'>
+                <div className="relative w-full">
+                    <div className="absolute bottom-1/2 w-full border-t border-gray-600"></div>
+                </div>
+                <div><p>or</p></div>
+                <div className="relative w-full">
+                    <div className="absolute bottom-1/2 w-full border-t border-gray-600"></div>
+                </div>
+            </div>
+
+        <button
+            onClick={handelGoogleLogin}
+            className="flex justify-center items-center w-full bg-gray-300 text-black py-3 rounded-lg font-medium transition-all duration-300 transform hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
+          >
+           <FcGoogle className='inline text-2xl me-2'></FcGoogle> <p>{isLogin ? 'Login With Google' : 'Sign Up with Google'}</p>
+          </button>
         
         <div className="mt-6 text-center">
           <button

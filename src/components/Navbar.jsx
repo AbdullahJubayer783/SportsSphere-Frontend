@@ -1,8 +1,11 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import LoginModal from './LoginModal';
 import logo from '../images/logo.png'
+import { AuthContext } from './Provider/AuthProvider';
+
 const Navbar = () => {
+  const {user,signout} = useContext(AuthContext);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   
@@ -14,6 +17,7 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
 
   return (
     <>
@@ -31,16 +35,25 @@ const Navbar = () => {
             </span>
           </div>
           
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2 rounded-full bg-sport-blue text-white font-medium shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105 active:scale-95"
-          >
-            Login
-          </button>
+          {
+             user?<div className='flex items-center gap-2 text-white '><p className={`${
+              scrolled 
+                ? 'text-black' 
+                : 'text-white'
+            }`}>{user.displayName}</p><button onClick={signout} className='px-3 py-2 bg-gray-700 rounded-lg text-white'>SignOut </button></div>:<button 
+             onClick={() => setIsModalOpen(true)}
+             className="px-4 py-2 rounded-full bg-sport-blue text-white font-medium shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105 active:scale-95"
+           >
+             Login
+           </button>
+          }
+          
         </div>
       </nav>
       
-      <LoginModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+       <LoginModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      
+      
     </>
   );
 };

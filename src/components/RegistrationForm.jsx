@@ -1,20 +1,118 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useContext } from 'react';
 import { typewriter } from '../utils/animations';
-
+import { AuthContext } from './Provider/AuthProvider';
+const divisions = [
+  "Barisal",
+  "Chattogram",
+  "Dhaka",
+  "Khulna",
+  "Mymensingh",
+  "Rajshahi",
+  "Rangpur",
+  "Sylhet",
+];
+const bangladeshDivisions = {
+  Dhaka: [
+    "Dhaka",
+    "Faridpur",
+    "Gazipur",
+    "Gopalganj",
+    "Kishoreganj",
+    "Madaripur",
+    "Manikganj",
+    "Munshiganj",
+    "Narayanganj",
+    "Narsingdi",
+    "Rajbari",
+    "Shariatpur",
+    "Tangail",
+  ],
+  Mymensingh: [
+    "Jamalpur",
+    "Mymensingh",
+    "Netrokona",
+    "Sherpur",
+  ],
+  Rajshahi: [
+    "Bogra",
+    "Joypurhat",
+    "Naogaon",
+    "Natore",
+    "Nawabganj",
+    "Pabna",
+    "Rajshahi",
+    "Sirajgonj",
+  ],
+  Rangpur: [
+    "Dinajpur",
+    "Gaibandha",
+    "Kurigram",
+    "Lalmonirhat",
+    "Nilphamari",
+    "Panchagarh",
+    "Rangpur",
+    "Thakurgaon",
+  ],
+  Barisal: [
+    "Barguna",
+    "Barisal",
+    "Bhola",
+    "Jhalokati",
+    "Patuakhali",
+    "Pirojpur",
+  ],
+  Chattogram: [
+    "Bandarban",
+    "Brahmanbaria",
+    "Chandpur",
+    "Chittagong",
+    "Comilla",
+    "Cox's Bazar",
+    "Feni",
+    "Khagrachari",
+    "Lakshmipur",
+    "Noakhali",
+    "Rangamati",
+  ],
+  Sylhet: [
+    "Habiganj",
+    "Maulvibazar",
+    "Sunamganj",
+    "Sylhet",
+  ],
+  Khulna: [
+    "Bagerhat",
+    "Chuadanga",
+    "Jessore",
+    "Jhenaidah",
+    "Khulna",
+    "Kushtia",
+    "Magura",
+    "Meherpur",
+    "Narail",
+    "Satkhira",
+  ],
+};
 const RegistrationForm = () => {
+  const {user} = useContext(AuthContext);
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
+    name: `${user?.displayName!==''&&user?.displayName!==undefined?user?.displayName:''}`,
+    email: `${user?.email!==''&&user?.email!==undefined?user?.email:''}`,
     number: '',
+    division: '',
+    district: '',
+    area: '',
+    address: '',
     jerseyOption: ''
   });
+  
   
   const [errors, setErrors] = useState({});
   const [isFormValid, setIsFormValid] = useState(false);
   const [isFocused, setIsFocused] = useState({});
   const [showAmount, setShowAmount] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+  const [isTrue , setTrue] = useState(true);
   const paymentTextRef = useRef(null);
   const formRef = useRef(null);
   
@@ -22,13 +120,19 @@ const RegistrationForm = () => {
   useEffect(() => {
     // Check if all required fields are filled
     const isValid = 
-      formData.name.trim() !== '' && 
-      formData.email.trim() !== '' && 
-      formData.number.trim() !== '' && 
-      formData.jerseyOption !== '';
-      
+    formData.name !== '' && 
+    formData.email.trim() !== '' && 
+    formData.number.trim() !== '' && 
+    formData.division.trim() !== '' && 
+    formData.district.trim() !== '' && 
+    formData.area.trim() !== '' && 
+    formData.address.trim() !== '' && 
+    formData.jerseyOption !== '';
+    
     setIsFormValid(isValid);
   }, [formData]);
+  
+  console.log(user?.displayName,user?.email);
   
   // Handle form changes
   const handleChange = (e) => {
@@ -73,7 +177,19 @@ const RegistrationForm = () => {
     } else if (!/^\d{10,}$/.test(formData.number.replace(/\D/g, ''))) {
       newErrors.number = 'Phone number is invalid';
     }
-    
+    //----validatition of new fields
+    // if (!formData.divisionOption) {
+    //   newErrors.division = 'Please select a jersey option';
+    // }
+    // if (!formData.jerseyOption) {
+    //   newErrors.division = 'Please select a jersey option';
+    // }
+    if (!formData.area.trim()) {
+      newErrors.area = 'Area is required';
+    }
+    if (!formData.address.trim()) {
+      newErrors.address = 'Adress is required';
+    }
     if (!formData.jerseyOption) {
       newErrors.jerseyOption = 'Please select a jersey option';
     }
@@ -98,6 +214,10 @@ const RegistrationForm = () => {
           name: '',
           email: '',
           number: '',
+          division: '',
+          district: '',
+          area: '',
+          address: '',
           jerseyOption: ''
         });
         
@@ -234,6 +354,153 @@ const RegistrationForm = () => {
                   )}
                 </div>
               </div>
+
+              {/* Division */}
+        <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="division">
+        Division
+        </label>
+        <div className={`relative ${isFocused.division ? 'transform scale-[1.01] transition-transform duration-300' : ''}`}>
+          <select
+            id='division'
+            name='division'
+            value={formData.division}
+            onChange={handleChange}
+            onFocus={() => setIsFocused({...isFocused, division: true})}
+            onBlur={() => setIsFocused({...isFocused, division: false})}
+            className={`w-full px-4 py-3 rounded-lg bg-gray-50 transition-all duration-200 outline-none ${
+              errors?.division 
+                ? 'ring-2 ring-red-500' 
+                : 'focus:ring-2 focus:ring-sport-blue'
+            }`}
+          >
+            <option value="">Select Division</option>
+            {divisions.map((div) => (
+              <option key={div} value={div}>
+                {div}
+              </option>
+            ))}
+          </select>
+          {errors.address && (
+              <p className="text-red-500 text-sm mt-1 animate-fade-in">
+                {errors.address}
+              </p>
+            )}
+          </div>
+        </div>
+              {/* District */}
+
+              <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="district">
+        District
+        </label>
+        <div className={`relative ${isFocused.district ? 'transform scale-[1.01] transition-transform duration-300' : ''}`}>
+          <select
+            id='district'
+            name='district'
+            value={formData.district}
+            onChange={handleChange}
+            onFocus={() => setIsFocused({...isFocused, district: true})}
+            onBlur={() => setIsFocused({...isFocused, district: false})}
+            className={`w-full px-4 py-3 rounded-lg bg-gray-50 transition-all duration-200 outline-none ${
+              errors?.district 
+                ? 'ring-2 ring-red-500' 
+                : 'focus:ring-2 focus:ring-sport-blue'
+            }`}
+            disabled={formData.division == ''}
+          >
+            <option value="">{formData.division == ''?"Select division before select district":"Select District"}</option>
+            {bangladeshDivisions[formData.division]?.map((div) => (
+              <option key={div} value={div}>
+                {div}
+              </option>
+            ))}
+          </select>
+          {errors?.district && (
+              <p className="text-red-500 text-sm mt-1 animate-fade-in">
+                {errors?.district}
+              </p>
+            )}
+          </div>
+        
+        </div>
+        {/* <div>
+          <label className="block mb-1 font-medium">District</label>
+          <select
+            className="w-full border border-gray-300 p-2 rounded"
+            value={district}
+            onChange={(e) => setDistrict(e.target.value)}
+            
+            
+          >
+            <option value="">Select District</option>
+            {bangladeshDivisions[division]?.map((div) => (
+              <option key={div} value={div}>
+                {div}
+              </option>
+            ))}
+          </select>
+        </div> */}
+
+
+        {/* Area */}
+        
+        <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="area">
+                  Area
+        </label>
+        <div className={`relative ${isFocused.area ? 'transform scale-[1.01] transition-transform duration-300' : ''}`}>
+          <input
+            type="text"
+            id="area"
+            name="area"
+            value={formData.area}
+            onChange={handleChange}
+            onFocus={() => setIsFocused({...isFocused, area: true})}
+            onBlur={() => setIsFocused({...isFocused, area: false})}
+            className={`w-full px-4 py-3 rounded-lg bg-gray-50 transition-all duration-200 outline-none ${
+              errors.area 
+                ? 'ring-2 ring-red-500' 
+                : 'focus:ring-2 focus:ring-sport-blue'
+            }`}
+            placeholder="Your Area name"
+          />
+          {errors.area && (
+              <p className="text-red-500 text-sm mt-1 animate-fade-in">
+                {errors.area}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Address */}
+        <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="address">
+        Address
+        </label>
+        <div className={`relative ${isFocused.address ? 'transform scale-[1.01] transition-transform duration-300' : ''}`}>
+          <input
+            type="text"
+            id="address"
+            name="address"
+            value={formData.address}
+            onChange={handleChange}
+            onFocus={() => setIsFocused({...isFocused, address: true})}
+            onBlur={() => setIsFocused({...isFocused, address: false})}
+            className={`w-full px-4 py-3 rounded-lg bg-gray-50 transition-all duration-200 outline-none ${
+              errors.address 
+                ? 'ring-2 ring-red-500' 
+                : 'focus:ring-2 focus:ring-sport-blue'
+            }`}
+            placeholder="Your address name"
+          />
+          {errors.address && (
+              <p className="text-red-500 text-sm mt-1 animate-fade-in">
+                {errors.address}
+              </p>
+            )}
+          </div>
+        </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">
