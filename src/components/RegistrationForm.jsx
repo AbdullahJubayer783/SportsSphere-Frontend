@@ -1,6 +1,13 @@
 import { useState, useRef, useEffect, useContext } from 'react';
 import { typewriter } from '../utils/animations';
 import { AuthContext } from './Provider/AuthProvider';
+import axios from 'axios';
+import { updateProfile } from 'firebase/auth';
+import { User } from 'lucide-react';
+import Bkash_logo from '../images/BKash-Logo.wine.svg'
+import Nagad_logo from '../images/Nagad-Logo.wine.png'
+import Rocket_logo from '../images/Rocket-Logo.png'
+
 const divisions = [
   "Barisal",
   "Chattogram",
@@ -10,6 +17,17 @@ const divisions = [
   "Rajshahi",
   "Rangpur",
   "Sylhet",
+];
+const t_shirt_size = [
+  "M",
+  "L",
+  "XL",
+  "XXL",
+];
+const payment_method = [
+  "Bkash",
+  "Nagad",
+  "Rocket",
 ];
 const bangladeshDivisions = {
   Dhaka: [
@@ -94,19 +112,22 @@ const bangladeshDivisions = {
   ],
 };
 const RegistrationForm = () => {
-  const {user} = useContext(AuthContext);
+  const {user,createUserEmailPass} = useContext(AuthContext);
   const [formData, setFormData] = useState({
-    name: `${user?.displayName!==''&&user?.displayName!==undefined?user?.displayName:''}`,
-    email: `${user?.email!==''&&user?.email!==undefined?user?.email:''}`,
+    name: '',
+    email: '',
     number: '',
     division: '',
     district: '',
     area: '',
     address: '',
-    jerseyOption: ''
+    jerseyOption: '',
+    t_size: 'M',
+    payment_method: '',
+    password: ''
   });
   
-  
+  const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [isFormValid, setIsFormValid] = useState(false);
   const [isFocused, setIsFocused] = useState({});
@@ -127,12 +148,13 @@ const RegistrationForm = () => {
     formData.district.trim() !== '' && 
     formData.area.trim() !== '' && 
     formData.address.trim() !== '' && 
-    formData.jerseyOption !== '';
+    formData.jerseyOption !== ''&&
+    formData.payment_method.trim() !== '';
+
     
     setIsFormValid(isValid);
   }, [formData]);
   
-  console.log(user?.displayName,user?.email);
   
   // Handle form changes
   const handleChange = (e) => {
@@ -194,39 +216,169 @@ const RegistrationForm = () => {
       newErrors.jerseyOption = 'Please select a jersey option';
     }
     
+    if (!formData.payment_method) {
+      newErrors.jerseyOption = 'Please select a payment method';
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
   
   // Form submission
-  const handleSubmit = (e) => {
+  // "name": "John Doe",
+  // "email": "john@example.com",
+  // "user_email": "account@example.com",
+  // "phone_number": "+8801712345678",
+  // "division": "Dhaka",
+  // "district": "Dhaka",
+  // "area": "Mirpur",
+  // "address": "123 Street",
+  // "with_jersey": true,
+  // "transaction_id": "TX123456",
+  // "payment_method": "Bkash",
+  // "account_number": "123456789012"
+  // const handleSubmit =  (e) => {
+  //   e.preventDefault();
+    
+  //   if (validateForm()) {
+  //     setIsSubmitting(true);
+  //     console.log("submitted succesfully");
+  //     // Simulate API call
+  //     setLoading(true)
+  //     setTimeout(() => {
+  //       console.log('Form submitted:', formData);
+
+        
+  //       if(user===null){
+  //        createUserEmailPass(formData.name , formData.email , formData.password)
+  //         .then(res=>{
+  //           updateProfile(res.user, {
+  //             displayName: formData.name
+  //           }).then(() => {
+  //             console.log("profile Update!");
+  //           }).catch((error) => {
+  //             console.log("Some issu occured..!!");
+  //           });
+  //         })
+  //           .then(err=>console.log(err))
+  //         }
+
+          
+  //            fetch('http://localhost:8000/api/registrations/', {
+  //             method: 'POST',
+  //             headers: {
+  //               'Accept': 'application/json',
+  //               'Content-Type': 'application/json'
+  //             },
+  //             body: JSON.stringify({
+  //               name: formData.name,
+  //               email: formData.email,
+  //               user_email: user?.email,
+  //               phone_number: formData.number,
+  //               division: formData.division,
+  //               district: formData.district,
+  //               area: formData.area,
+  //               address: formData.address,
+  //               with_jersey: formData.jerseyOption=="withJersey",
+  //               account_number:"123456789012",
+  //               payment_method:"Nagad",
+  //               transaction_id:"rdxt",
+  //               })
+  //           });
+            
+  //       setFormData({
+  //         name: '',
+  //         email: '',
+  //         number: '',
+  //         division: '',
+  //         district: '',
+  //         area: '',
+  //         address: '',
+  //         jerseyOption: ''
+  //       });
+        
+  //       setIsSubmitting(false);
+  //       setShowAmount(false);
+        
+  //       // Show success message
+  //       alert('Registration successful! Thank you for participating.');
+  //     }, 1500);
+  //   }
+  // };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (validateForm()) {
-      setIsSubmitting(true);
+    if (!validateForm()) return;
+  
+    setIsSubmitting(true);
+    setLoading(true);
+  
+    try {
+      console.log("Submitting form...");
       
-      // Simulate API call
-      setTimeout(() => {
-        console.log('Form submitted:', formData);
+      // User creation logic
+      let currentUser = user;
+      if (!currentUser) {
+        const userCredential = await createUserEmailPass(formData.name, formData.email, formData.password);
+        currentUser = userCredential.user;
         
-        // Reset form
-        setFormData({
-          name: '',
-          email: '',
-          number: '',
-          division: '',
-          district: '',
-          area: '',
-          address: '',
-          jerseyOption: ''
+        await updateProfile(currentUser, {
+          displayName: formData.name
         });
-        
-        setIsSubmitting(false);
-        setShowAmount(false);
-        
-        // Show success message
-        alert('Registration successful! Thank you for participating.');
-      }, 1500);
+        console.log("Profile updated!");
+      }
+  
+      // Registration API call
+      const response = await fetch('http://localhost:8000/api/registrations/', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          user_email: currentUser?.email,
+          phone_number: formData.number,
+          division: formData.division,
+          district: formData.district,
+          area: formData.area,
+          address: formData.address,
+          with_jersey: formData.jerseyOption === "withJersey",
+          t_shirt_size: formData.t_size===''?'NO':formData.t_size,
+          account_number: "123456789012",
+          payment_method: formData.payment_method,
+          transaction_id: "rdxt",
+        })
+      });
+  
+      if (!response.ok) {
+        throw new Error('Registration failed');
+      }
+  
+      // Reset form after successful submission
+      setFormData({
+        name: '',
+        email: '',
+        number: '',
+        division: '',
+        district: '',
+        area: '',
+        address: '',
+        jerseyOption: '',
+        t_size: `${formData.jerseyOption === "withJersey" && formData.t_size ===''?'M':''}`,
+        payment_method: ''
+      });
+      
+      setShowAmount(false);
+      alert('Registration successful! Thank you for participating.');
+    } catch (error) {
+      console.error('Error:', error);
+      alert(`Error: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
+      setLoading(false);
     }
   };
   
@@ -424,24 +576,7 @@ const RegistrationForm = () => {
           </div>
         
         </div>
-        {/* <div>
-          <label className="block mb-1 font-medium">District</label>
-          <select
-            className="w-full border border-gray-300 p-2 rounded"
-            value={district}
-            onChange={(e) => setDistrict(e.target.value)}
-            
-            
-          >
-            <option value="">Select District</option>
-            {bangladeshDivisions[division]?.map((div) => (
-              <option key={div} value={div}>
-                {div}
-              </option>
-            ))}
-          </select>
-        </div> */}
-
+        
 
         {/* Area */}
         
@@ -494,17 +629,14 @@ const RegistrationForm = () => {
             }`}
             placeholder="Your address name"
           />
-          {errors.address && (
-              <p className="text-red-500 text-sm mt-1 animate-fade-in">
-                {errors.address}
-              </p>
-            )}
+          
           </div>
         </div>
               
+        
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Jersey Option
+                  Category
                 </label>
                 <div className="space-y-3">
                   <div className="flex items-center">
@@ -544,7 +676,118 @@ const RegistrationForm = () => {
                   )}
                 </div>
               </div>
+              {/* if selected jersey size will show */}
+              {
+                formData.jerseyOption === 'withJersey'?<div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Select Jersey Size
+                </label>
+                {/* start */}
+                <div className='space-x-2 flex items-center '>
+                  {/* first M */}
+                  <div className="">
+                    <input
+                      type="radio"
+                      id="M"
+                      name="t_size"
+                      value="M"
+                      checked={formData.t_size === 'M'}
+                      onChange={handleChange}
+                      className="appearance-none text-sport-blue focus:ring-sport-blue"
+                    />
+                    <label htmlFor="M" className={formData.t_size === 'M'?"bg-blue-200 px-3 py-1 rounded-2xl border-2 text-gray-700":"px-3 py-1 rounded-2xl border-2 text-gray-700"}>
+                      M
+                    </label>
+                  </div>
+                  {/* second L */}
+                  <div className="">
+                    <input
+                      type="radio"
+                      id="L"
+                      name="t_size"
+                      value="L"
+                      checked={formData.t_size === 'L'}
+                      onChange={handleChange}
+                      className="appearance-none text-sport-blue focus:ring-sport-blue"
+                    />
+                    <label htmlFor="L" className={formData.t_size === 'L'?"bg-blue-200 px-3 py-1 rounded-2xl border-2 text-gray-700":"px-3 py-1 rounded-2xl border-2 text-gray-700"}>
+                      L
+                    </label>
+                  </div>
+                  {/* second XL */}
+                  <div className="">
+                    <input
+                      type="radio"
+                      id="XL"
+                      name="t_size"
+                      value="XL"
+                      checked={formData.t_size === 'XL'}
+                      onChange={handleChange}
+                      className="appearance-none text-sport-blue focus:ring-sport-blue"
+                    />
+                    <label htmlFor="XL" className={formData.t_size === 'XL'?"bg-blue-200 px-3 py-1 rounded-2xl border-2 text-gray-700":"px-3 py-1 rounded-2xl border-2 text-gray-700"}>
+                      XL
+                    </label>
+                  </div>
+                  {/* second XXL */}
+                  <div className="">
+                    <input
+                      type="radio"
+                      id="XXL"
+                      name="t_size"
+                      value="XXL"
+                      checked={formData.t_size === 'XXL'}
+                      onChange={handleChange}
+                      className="appearance-none text-sport-blue focus:ring-sport-blue"
+                      
+                    />
+                    <label htmlFor="XXL" className={formData.t_size === 'XXL'?"bg-blue-200 px-3 py-1 rounded-2xl border-2 text-gray-700":"px-3 py-1 rounded-2xl border-2 text-gray-700"}>
+                      XXL
+                    </label>
+                  </div>
+                </div>
+              </div>:""
+              }
               
+
+              {/* Payment Method */}
+              <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="payment_method">
+              Payment Method
+              </label>
+              <div className={`relative ${isFocused.payment_method ? 'transform scale-[1.01] transition-transform duration-300' : ''}`}>
+                <select
+                  id='payment_method'
+                  name='payment_method'
+                  value={formData.payment_method}
+                  onChange={handleChange}
+                  onFocus={() => setIsFocused({...isFocused, payment_method: true})}
+                  onBlur={() => setIsFocused({...isFocused, payment_method: false})}
+                  className={`w-full px-4 py-3 rounded-lg bg-gray-50 transition-all duration-200 outline-none ${
+                    errors?.payment_method 
+                      ? 'ring-2 ring-red-500' 
+                      : 'focus:ring-2 focus:ring-sport-blue'
+                  }`}
+                >
+                  <option value="">Select payment method</option>
+                  {payment_method.map((div) => (
+                    <option key={div} value={div}>
+                      {div}
+                    </option>
+                  ))}
+                </select>
+                {errors.payment_method && (
+                    <p className="text-red-500 text-sm mt-1 animate-fade-in">
+                      {errors.payment_method}
+                    </p>
+                  )}
+                </div>
+              </div>
+              {errors.address && (
+              <p className="text-red-500 text-sm mt-1 animate-fade-in">
+                {errors.address}
+              </p>
+            )}
               {showAmount && (
                 <div className="p-4 bg-gray-50 rounded-lg w-full overflow-x-auto">
                   <p 
@@ -554,27 +797,78 @@ const RegistrationForm = () => {
                 </div>
               )}
               
-              <button
-                type="submit"
-                disabled={!isFormValid || isSubmitting}
-                className={`w-full py-3 rounded-lg font-medium text-white transition-all duration-300 ${
-                  isFormValid && !isSubmitting
-                    ? 'bg-sport-blue hover:bg-blue-600 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]'
-                    : 'bg-gray-400 cursor-not-allowed'
-                }`}
-              >
-                {isSubmitting ? (
-                  <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Processing...
-                  </span>
-                ) : (
-                  'Pay Now'
-                )}
-              </button>
+              {/* Password */}
+              {
+                user===null?<div>
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="password">
+                Create your password
+                </label>
+                <div className={`relative ${isFocused.password ? 'transform scale-[1.01] transition-transform duration-300' : ''}`}>
+                  <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    onFocus={() => setIsFocused({...isFocused, password: true})}
+                    onBlur={() => setIsFocused({...isFocused, password: false})}
+                    className={`w-full px-4 py-3 rounded-lg bg-gray-50 transition-all duration-200 outline-none ${
+                      errors.password 
+                        ? 'ring-2 ring-red-500' 
+                        : 'focus:ring-2 focus:ring-sport-blue'
+                    }`}
+                    placeholder="Create your password "
+                  />
+                  {errors.password && (
+                      <p className="text-red-500 text-sm mt-1 animate-fade-in">
+                        {errors.password}
+                      </p>
+                    )}
+                  </div>
+                </div>:""
+              }
+
+              {
+                isFormValid&&
+                  <button
+                    type="submit"
+                    disabled={!isFormValid || isSubmitting}
+                    className={`w-full  rounded-lg font-medium text-white transition-all duration-300 ${
+                      isFormValid && !isSubmitting
+                        ? 'bg-sport-blue hover:bg-blue-600 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]'
+                        : 'bg-gray-400 cursor-not-allowed'
+                    }`}
+                  >
+                    {isSubmitting ? (
+                      <span className="flex items-center justify-center h-3">
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Processing...
+                      </span>
+                    ) : (
+                      formData.payment_method === 'Bkash'&&
+                      <div className='flex items-center justify-center'>
+                        <img className='w-20' src={Bkash_logo} alt="" srcset="" />
+                        <p className='font-semibold'>Bkash Payment</p>
+                      </div> ||
+                      formData.payment_method === 'Nagad'&&
+                      <div className='flex items-center justify-center'>
+                        <img className='w-20' src={Nagad_logo} alt="" srcset="" />
+                        <p className='font-semibold'>Nagad Payment</p>
+                      </div> ||
+                      formData.payment_method === 'Rocket'&&
+                      <div className='flex items-center justify-center'>
+                        <img className='w-14' src={Rocket_logo} alt="" srcset="" />
+                        <p className='font-semibold'>Rocket Payment</p>
+                      </div>
+                    
+
+                      
+                    )}
+                  </button>
+              }
             </form>
           </div>
         </div>
