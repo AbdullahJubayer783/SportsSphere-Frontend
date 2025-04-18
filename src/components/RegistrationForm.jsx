@@ -111,6 +111,8 @@ const bangladeshDivisions = {
     "Satkhira",
   ],
 };
+
+
 const RegistrationForm = () => {
   const {user,createUserEmailPass} = useContext(AuthContext);
   const [formData, setFormData] = useState({
@@ -316,7 +318,7 @@ const RegistrationForm = () => {
   
     try {
       console.log("Submitting form...");
-      
+      initiatePayment()
       // User creation logic
       let currentUser = user;
       if (!currentUser) {
@@ -330,32 +332,32 @@ const RegistrationForm = () => {
       }
   
       // Registration API call
-      const response = await fetch('http://localhost:8000/api/registrations/', {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          user_email: currentUser?.email,
-          phone_number: formData.number,
-          division: formData.division,
-          district: formData.district,
-          area: formData.area,
-          address: formData.address,
-          with_jersey: formData.jerseyOption === "withJersey",
-          t_shirt_size: formData.t_size===''?'NO':formData.t_size,
-          account_number: "123456789012",
-          payment_method: formData.payment_method,
-          transaction_id: "rdxt",
-        })
-      });
+      // const response = await fetch('http://localhost:8000/api/registrations/', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Accept': 'application/json',
+      //     'Content-Type': 'application/json'
+      //   },
+      //   body: JSON.stringify({
+      //     name: formData.name,
+      //     email: formData.email,
+      //     user_email: currentUser?.email,
+      //     phone_number: formData.number,
+      //     division: formData.division,
+      //     district: formData.district,
+      //     area: formData.area,
+      //     address: formData.address,
+      //     with_jersey: formData.jerseyOption === "withJersey",
+      //     t_shirt_size: formData.t_size===''?'NO':formData.t_size,
+      //     account_number: "123456789012",
+      //     payment_method: formData.payment_method,
+      //     transaction_id: "rdxt",
+      //   })
+      // });
   
-      if (!response.ok) {
-        throw new Error('Registration failed');
-      }
+      // if (!response.ok) {
+      //   throw new Error('Registration failed');
+      // }
   
       // Reset form after successful submission
       setFormData({
@@ -381,7 +383,35 @@ const RegistrationForm = () => {
       setLoading(false);
     }
   };
+  const initiatePayment = async () => {
+    const full_address = formData.address + ',' + formData.area + ',' + formData.district + ',' + formData.division
+    const res = await fetch('http://localhost:8000/api/payments/api/create-payment/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        transaction_id:'xxx',
+        amount: formData.jerseyOption === "withJersey"?800:650,
+        customer_name: formData.name,
+        customer_email: formData.email,
+        customer_address: full_address,
+        customer_phone: formData.number.toString(),  // Keep as string
+        product_name: "7.5k virtual run" ,
+        customer_city: formData.area,
+        customer_postcode: '1230',
+      }),
+    });
   
+    const data = await res.json();
+    if (data.gateway_url) {
+      window.location.href = data.gateway_url
+  
+        } else {
+      alert("Failed to initiate payment");
+    }
+    console.log(data);
+  };
   // Animation for form entrance
   useEffect(() => {
     const observer = new IntersectionObserver(
